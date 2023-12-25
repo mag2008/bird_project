@@ -17,46 +17,38 @@ server = (host_ip, port)
 class motion:
   def __init__(self):
     
-while True:
-	# grab the current frame and initialize the occupied/unoccupied
-	# text
-	frame = vs.read()
-	frame = frame if args.get("video", None) is None else frame[1]
-	text = "Unoccupied"
-	# if the frame could not be grabbed, then we have reached the end
-	# of the video
-	if frame is None:
-		break
-	# resize the frame, convert it to grayscale, and blur it
-	frame = imutils.resize(frame, width=500)
-	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-	gray = cv2.GaussianBlur(gray, (21, 21), 0)
-	# if the first frame is None, initialize it
-	if firstFrame is None:
-		firstFrame = gray
-		continue
-  	# compute the absolute difference between the current frame and
-	# first frame
-	frameDelta = cv2.absdiff(firstFrame, gray)
-	thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
-	# dilate the thresholded image to fill in holes, then find contours
-	# on thresholded image
-	thresh = cv2.dilate(thresh, None, iterations=2)
-	cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-		cv2.CHAIN_APPROX_SIMPLE)
-	cnts = imutils.grab_contours(cnts)
-	# loop over the contours
-	for c in cnts:
-		# if the contour is too small, ignore it
-		if cv2.contourArea(c) < args["min_area"]:
-			continue
-		# compute the bounding box for the contour, draw it on the frame,
-		# and update the text
-		(x, y, w, h) = cv2.boundingRect(c)
-		cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-		text = "Occupied"
+
+cap=v.frame()
+
+ret1,frame1= cap.read()
+gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+gray1 = cv2.GaussianBlur(gray1, (21, 21), 0)
+cv2.imshow('window',frame1)
+
+while(True):
+    ret2,frame2=cap.read()
+    gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
+    gray2 = cv2.GaussianBlur(gray2, (21, 21), 0)
+    
+    deltaframe=cv2.absdiff(gray1,gray2)
+    cv2.imshow('delta',deltaframe)
+    threshold = cv2.threshold(deltaframe, 25, 255, cv2.THRESH_BINARY)[1]
+    threshold = cv2.dilate(threshold,None)
+    cv2.imshow('threshold',threshold)
+    countour,heirarchy = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for i in countour:
+        if cv2.contourArea(i) < 50:
+            continue
  
-    pass
+        (x, y, w, h) = cv2.boundingRect(i)
+        cv2.rectangle(frame2, (x, y), (x + w, y + h), (255, 0, 0), 2)
+    
+    cv2.imshow('window',frame2)
+    
+    if cv2.waitKey(20) == ord('q'):
+      break
+cap.release()
+cv2.destroyAllWindows()
 class movie:
     def __init__(self):
         self.recording_time = 5

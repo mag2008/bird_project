@@ -18,15 +18,17 @@ class motion:
   def __init__(self):
     
 
-cap=v.frame()
+cap=v.video_frame()
 
-ret1,frame1= cap.read()
+frame1= v.video_frame() making the background image
+
 gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
 gray1 = cv2.GaussianBlur(gray1, (21, 21), 0)
 cv2.imshow('window',frame1)
 
 while(True):
-    ret2,frame2=cap.read()
+    frame2=v.video_frame()
+
     gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
     gray2 = cv2.GaussianBlur(gray2, (21, 21), 0)
     

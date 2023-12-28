@@ -64,8 +64,9 @@ class movie:
         #print(self.previous_frame)
         self.end_time = time.time() + self.recording_time
         while time.time()< self.end_time:
+            self.one_frame_time = time.time() + 1/30
             self.current_frame = v.video_frame()
-            
+            while self.one_frame_time > time.time()
             while "None" in str(type(self.current_frame)):
                 print('no frame')
             self.out.write(self.current_frame)

@@ -18,38 +18,38 @@ class motion:
   def __init__(self):
     
 
-cap=v.video_frame()
 
-frame1= v.video_frame() making the background image
 
-gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-gray1 = cv2.GaussianBlur(gray1, (21, 21), 0)
-cv2.imshow('window',frame1)
+self.frame1= v.video_frame() making the background image
+
+self.gray1 = cv2.cvtColor(self.frame1, cv2.COLOR_BGR2GRAY)
+self.gray1 = cv2.GaussianBlur(self.gray1, (21, 21), 0)
+cv2.imshow('window',self.frame1)
 
 while(True):
-    frame2=v.video_frame()
+    self.frame2=v.video_frame()
 
-    gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-    gray2 = cv2.GaussianBlur(gray2, (21, 21), 0)
+    self.gray2 = cv2.cvtColor(self.frame2, cv2.COLOR_BGR2GRAY)
+    self.gray2 = cv2.GaussianBlur(self.gray2, (21, 21), 0)
     
-    deltaframe=cv2.absdiff(gray1,gray2)
-    cv2.imshow('delta',deltaframe)
-    threshold = cv2.threshold(deltaframe, 25, 255, cv2.THRESH_BINARY)[1]
-    threshold = cv2.dilate(threshold,None)
-    cv2.imshow('threshold',threshold)
-    countour,heirarchy = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    for i in countour:
-        if cv2.contourArea(i) < 50:
+    self.deltaframe=cv2.absdiff(self.gray1,self.gray2)
+    cv2.imshow('delta',self.deltaframe)
+    self.threshold = cv2.threshold(self.deltaframe, 25, 255, cv2.THRESH_BINARY)[1]
+    self threshold = cv2.dilate(self.threshold,None)
+    cv2.imshow('threshold',self.threshold)
+    self.countour,self.heirarchy = cv2.findContours(self.threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for self.i in self.countour:
+        if cv2.contourArea(self.i) < 50:
             continue
  
-        (x, y, w, h) = cv2.boundingRect(i)
-        cv2.rectangle(frame2, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        (self.x,self. y, self.w, self.h) = cv2.boundingRect(self.i)
+        cv2.rectangle(self.frame2, (self.x, self.y), (self.x + self.w, self.y + self.h), (255, 0, 0), 2)
     
-    cv2.imshow('window',frame2)
+    cv2.imshow('window',self.frame2)
     
     if cv2.waitKey(20) == ord('q'):
       break
-cap.release()
+
 cv2.destroyAllWindows()
 class movie:
     def __init__(self):

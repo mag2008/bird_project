@@ -28,6 +28,7 @@ self.gray1 = cv2.GaussianBlur(self.gray1, (21, 21), 0)
 cv2.imshow('window',self.frame1)
 
 while(True):
+    self.text = "unoccupied"
     self.frame2=v.video_frame()
 
     self.gray2 = cv2.cvtColor(self.frame2, cv2.COLOR_BGR2GRAY)
@@ -45,9 +46,10 @@ while(True):
  
         (self.x,self. y, self.w, self.h) = cv2.boundingRect(self.i)
         cv2.rectangle(self.frame2, (self.x, self.y), (self.x + self.w, self.y + self.h), (255, 0, 0), 2)
+        self.text = "motion"
     
     cv2.imshow('window',self.frame2)
-    
+    cv2.putframe()
     if cv2.waitKey(20) == ord('q'):
       break
 

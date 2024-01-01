@@ -54,6 +54,8 @@ while(True):
       break
 
 cv2.destroyAllWindows()
+def return_status(self):
+  return self.text 
 class movie:
     def __init__(self):
         self.recording_time = 5
@@ -61,7 +63,8 @@ class movie:
         self.out = cv2.VideoWriter('output1.mp4', self.fourcc, 30.0, (640, 480))
         self.i = 0
     def capture(self):
-        
+        while True:
+          if return_status == "motion":
         time.sleep(5)
         #print(v.video_frame())
         #print(self.previous_frame)
@@ -157,6 +160,7 @@ class audio:
 a = audio()
 v = video()
 m = movie()
+mo = motion()
 audio_thread = threading.Thread(target=a.audio_streamer, args=(server,))
 video_thread = threading.Thread(target=v.video_streamer, args=(server,))
 movie_thread = threading.Thread(target=m.capture)

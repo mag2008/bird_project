@@ -47,7 +47,7 @@ while(True):
         (self.x,self. y, self.w, self.h) = cv2.boundingRect(self.i)
         cv2.rectangle(self.frame2, (self.x, self.y), (self.x + self.w, self.y + self.h), (255, 0, 0), 2)
         self.text = "motion"
-    cv2.putText(frame2,"Room Status: {}".format(text))
+    cv2.putText(frame2,"Room Status: {}".format(text),(10, 20),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2))
     cv2.imshow('window',self.frame2)
     
     if cv2.waitKey(20) == ord('q'):

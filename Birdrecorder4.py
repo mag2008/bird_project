@@ -17,6 +17,8 @@ server = (host_ip, port)
 #used in handling binary data from network connections
 class motion:
   def __init__(self):
+    pass 
+  def start_motiondetection(self):
     
 
 
@@ -164,9 +166,12 @@ mo = motion()
 audio_thread = threading.Thread(target=a.audio_streamer, args=(server,))
 video_thread = threading.Thread(target=v.video_streamer, args=(server,))
 movie_thread = threading.Thread(target=m.capture)
+motion_thread = threading.Thread(target=mo.start_motiondetection)
 audio_thread.start()
 video_thread.start()
 movie_thread.start()
+motion_thread.start()
+motion_thread.join()
 movie_thread.join()
 audio_thread.join()
 video_thread.join()

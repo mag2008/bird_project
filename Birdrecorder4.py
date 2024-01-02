@@ -64,7 +64,7 @@ class movie:
         self.i = 0
     def capture(self):
         while True:
-          if return_status == "motion":
+          if return_status() == "motion":
         time.sleep(5)
         #print(v.video_frame())
         #print(self.previous_frame)

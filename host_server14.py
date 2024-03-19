@@ -1,7 +1,8 @@
-import socket, cv2, pickle,struct,time, threading, wave, pyaudio,queue,sys,subprocess,os,datetime,serial
-from flask import Flask, Response,render_template
+import  cv2,time, threading, wave, pyaudio,queue,sys,subprocess,os,datetime,serial
+from flask import Flask, Response
 import numpy as np
 from gpiozero import CPUTemperature
+from ftplib import FTP
 
 CHUNK = 1024 
 RATE = 48000
@@ -12,92 +13,108 @@ FORMAT = pyaudio.paInt16
 video_event = threading.Event()
 audio_event = threading.Event()
 capture_event = threading.Event()
+change_camera = threading.Event()
+created_new_file = threading.Event()
 
+	
+audio_q= queue.Queue(maxsize=48)
+video_q = queue.Queue(maxsize=30)
+recorded_audio= queue.Queue()
+recorded_video= queue.Queue()
+recorded_both = queue.Queue()
 app = Flask(__name__)
 
 
 def cpu_tempreture_sensor():
 	
-	self.frame_height = 400
-	self.frame_width = 600
-	self.frame_thickness = 10
-	self.text_position = (50, 50)  
-	self.font = cv2.FONT_HERSHEY_SIMPLEX
-	self.font_scale = 1
-	self.color = (255, 255, 255) 
-	self.thickness = 2
-	self.cpu = CPUTemperature()
+	frame_height = 400
+	frame_width = 600
+	frame_thickness = 10
+	text_position = (50, 50)  
+	font = cv2.FONT_HERSHEY_SIMPLEX
+	font_scale = 1
+	color = (255, 255, 255) 
+	thickness = 2
+	cpu = CPUTemperature()
 	
 	
 	while True:
 		time.sleep(1)
 	
-		self.frame = np.zeros((self.frame_height, self.frame_width, 3), dtype=np.uint8)
-		self.frame_with_frame = cv2.rectangle(self.frame, (0, 0), (self.frame_width - 1, self.frame_height - 1), (0, 0, 0), self.frame_thickness)
+		frame = np.zeros((frame_height, frame_width, 3), dtype=np.uint8)
+		frame_with_frame = cv2.rectangle(frame, (0, 0), (frame_width - 1, frame_height - 1), (0, 0, 0), frame_thickness)
 		
-		self.tempreture_value = self.cpu.tempreture
-		self.float_text = "Current CPU Tempreture is: {:.2f}".format(self.tempreture_value)
-		self.frame_with_text = cv2.putText(self.frame_with_frame, self.float_text, self.text_position, self.font, self.font_scale, self.color, self.thickness)
+		tempreture_value = cpu.temperature
+		float_text = "Current CPU Tempreture is: {:.2f}".format(tempreture_value)
+		frame_with_text = cv2.putText(frame_with_frame, float_text, text_position, font, font_scale, color, thickness)
 
 		# Convert the image to JPEG format
-		_, self.buffer = cv2.imencode('.jpg', self.frame_with_text)
+		_, buffer = cv2.imencode('.jpg', frame_with_text)
 		yield (b'--frame\r\n'
-		   b'Content-Type: image/jpeg\r\n\r\n' + self.buffer.tobytes() + b'\r\n')
+		   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 		   
 def voltage():
+	global capture_event, change_camera
 	day = True
 	#connect with arduino
 	ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
 	ser.reset_input_buffer()
-
-	
-	# Encode the frame as bytes
+	change_camera.set()#no change in camera
+	time.sleep(1)
+	# measuring the voltage if lower than 200 it is to dark so the day camera is switched to ir night camera
 	while True:
 		while day:
-			time.sleep(1)
 			if ser.in_waiting > 0:
 				line = ser.readline().decode('utf-8').rstrip()
-				print(line)
+				#print(line)
 				if int(line) < 200:
+					capture_event.wait()
+					change_camera.clear()
 					v.change_device(1)
+					time.sleep(0.5)
+					change_camera.set()
 					day = False
 		while not day:
-			time.sleep(1)
 			if ser.in_waiting > 0:
 				line = ser.readline().decode('utf-8').rstrip()
-				print(line)
+				#print(line)
 				if int(line) > 200:
+					capture_event.wait()
+					change_camera.clear()
 					v.change_device(0)
+					time.sleep(0.5)
+					change_camera.set()
 					day = True
 			
 class motion:
 	def __init__(self):
 		
-		global video_event, audio_event,capture_event
-	def start_motiondetection(self):
+		global video_event, audio_event,capture_event,change_camera
+	def start_motion_detection(self):
 		
-		#wait for event
+		#wait for audio and video to be streamed
 		video_event.wait()
 		audio_event.wait()
-		capture_event.set()
-		time.sleep(1)
-		
+		capture_event.set()#meaning that no videos are captured
 		print('started...')
    
 		while(True):
-			
+			#compare the frames between 0.5 seconds every time
 			self.detect_motion(0.5)
-			
-			
 			if self.text == "motion":
-				print(self.text)
-				print('starting capturing...')
-				record_class = record()
+				
+				print(self.text,'starting capturing...')
+				# the change of camera should not trigger motion
+				if change_camera.is_set():
+					#starts recording, whole process happens in the initialization
+					record_class = record()
 	def detect_motion(self,delay):
-		self.frame1= v.return_frame()# making the background image
+		#https://www.codespeedy.com/motion-detection-using-opencv-in-python/
+		# making the background image
+		self.frame1= v.return_frame()
 
-		self.gray1 = cv2.cvtColor(self.frame1, cv2.COLOR_BGR2GRAY)
-		self.gray1 = cv2.GaussianBlur(self.gray1, (21, 21), 0)
+		self.gray1 = cv2.cvtColor(self.frame1, cv2.COLOR_BGR2GRAY)#makes the ficture gray
+		self.gray1 = cv2.GaussianBlur(self.gray1, (21, 21), 0)#and then blurry
 		self.text = "nomotion"
 		time.sleep(delay)
 		self.frame2=v.return_frame()
@@ -106,7 +123,7 @@ class motion:
 		self.gray2 = cv2.cvtColor(self.frame2, cv2.COLOR_BGR2GRAY)
 		self.gray2 = cv2.GaussianBlur(self.gray2, (21, 21), 0)
 
-		self.deltaframe=cv2.absdiff(self.gray1,self.gray2)
+		self.deltaframe=cv2.absdiff(self.gray1,self.gray2)#the difference is showed here
 		#cv2.imshow('delta',self.deltaframe)
 		self.threshold = cv2.threshold(self.deltaframe, 25, 255, cv2.THRESH_BINARY)[1]
 		self.threshold = cv2.dilate(self.threshold,None)
@@ -130,24 +147,37 @@ class motion:
 			
 		
 		#cv2.destroyAllWindows()
-		print(self.text)
+		#print(self.text)
 	def return_status(self):
 		return self.text 
 		
 	def motion_duration(self):
+		#is looking for motion until we no motion is detected anymore
+		self.motion_number = 0
+		time.sleep(3)#minimum video length
 		while not capture_event.is_set():
 			self.detect_motion(0.5)
 			if self.text == "nomotion":
 				capture_event.set()	
-			print(self.text)
+			#print(self.text)
 class record:
 	def __init__(self):
-		global capture_event,mo
+		global capture_event,mo, created_new_file,recorded_audio,recorded_video,recorded_both
 		capture_event.clear()
-		
+		self.current_date = datetime.datetime.now()
+		self.date = self.current_date.strftime("%m-%d-%Y")
+		self.path_to_video_date = '/home/pi/FTP/video/' + self.date
+		self.path_to_audio_date = '/home/pi/FTP/audio/' + self.date
+		self.path_to_both_date = '/home/pi/FTP/both/' + self.date
+		if not os.path.exists(self.path_to_video_date):
+			os.mkdir(self.path_to_video_date)
+		if not os.path.exists(self.path_to_audio_date):
+			os.mkdir(self.path_to_audio_date)
+		if not os.path.exists(self.path_to_both_date):
+			os.mkdir(self.path_to_both_date)
 		self.fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Codec for the output video (XVID is a common choice)
 		self.timestr = time.strftime("%Y%m%d-%H%M%S")
-		self.video_output_filename = '/home/pi/FTP/video/'+ self.timestr + '.avi'
+		self.video_output_filename = self.path_to_video_date + '/' + self.timestr + '.avi'
 		self.out = cv2.VideoWriter(self.video_output_filename, self.fourcc, 30.0, (640, 480))
 		video_record = threading.Thread(target=self.record_video)
 		audio_record = threading.Thread(target=self.record_audio)
@@ -158,7 +188,10 @@ class record:
 		video_record.join()
 		audio_record.join()
 		capture_event.set()
-		
+		recorded_audio.put(self.audio_output_filename)
+		recorded_video.put(self.video_output_filename)
+		recorded_both.put(self.output_filename)
+		created_new_file.set()
 	def record_video(self):
 		global video_q,capture_event
 		self.video_counter = 0
@@ -187,14 +220,14 @@ class record:
 				self.frame_number = 0
 				self.calc_frame_rate = time.time() + 1
 			
-		self.audio_output_filename = '/home/pi/FTP/audio/'+self.timestr + '.wav'
+		self.audio_output_filename = self.path_to_audio_date + '/' + self.timestr + '.wav'
 		wf = wave.open(self.audio_output_filename, 'wb')
 		wf.setnchannels(CHANNELS)
 		wf.setsampwidth(a.audio.get_sample_size(FORMAT))
 		wf.setframerate(RATE)
 		wf.writeframes(b''.join(self.frames))
 		wf.close()
-		self.output_filename ='/home/pi/FTP/both/' + self.timestr + 'both.mp4'
+		self.output_filename = self.path_to_both_date +'/' + self.timestr + '.mp4'
 		subprocess.call(["sudo","ffmpeg", "-i",self.video_output_filename , "-i", self.audio_output_filename, "-c:v", "copy", "-c:a", "aac", self.output_filename])
 		
 		
@@ -206,8 +239,7 @@ class record:
 		print('finish recording')
 		print('video frame number is', self.video_counter)
 		print('audio frame number is', self.frame_number)
-		
-
+	
 def genHeader(sampleRate, bitsPerSample, channels, samples):
 	datasize = 2064384000*2 # Some veeery big number here instead of: #samples * channels * bitsPerSample // 8
 	o = bytes("RIFF",'ascii')                                               # (4byte) Marks file as RIFF
@@ -277,9 +309,10 @@ class video:
 		return self.frame
 		
 	def change_http_queue(self,new_delay):
-		self.video_delay_q = queue.Queue(maxsize=new_delay )
+		self.video_delay_q = queue.Queue(maxsize=new_delay)
 		
 	def change_device(self,device_number):
+		#change the camera by device_index
 		self.vid = cv2.VideoCapture(device_number)
 		
 	def get_frame(self):
@@ -299,26 +332,71 @@ class video:
 			yield (b'--frame\r\n'
 				   b'Content-Type: image/jpeg\r\n\r\n' + self.buffer.tobytes() + b'\r\n')
 				   
+class ftp_server:
+	def __init__(self):
+		# connect to ftp
+		self.ftp = FTP('192.168.0.38')  
+		self.ftp.login(user='pi',passwd="yBV4Lq'C")     
+		global recorded_audio,recorded_video,recorded_both#call all events
+	def send_file(self):
+		while True:
+			#wait_until new file is created
+			created_new_file.wait()
+			created_new_file.clear()
+			self.audio_filename = recorded_audio.get()
+			self.video_filename = recorded_video.get()
+			self.both_filename= recorded_both.get()
+			self.folder_name = self.both_filename[18:28]
+			print(self.folder_name)
+			#sending the video file
+			self.ftp.cwd('/video')
+			self.target_path = '/video/' + self.folder_name
+			self.go_to_dir(self.target_path)
+			with open(self.video_filename, "rb") as file:
+				# use FTP's STOR command to upload the file
+				self.ftp.storbinary(f"STOR {self.video_filename[-18:]}", file)
+			#sending the audio	
+			self.ftp.cwd('/audio')
+			self.target_path = '/audio/' + self.folder_name
+			self.go_to_dir(self.target_path)
+			with open(self.audio_filename, "rb") as file:
+				# use FTP's STOR command to upload the file
+				self.ftp.storbinary(f"STOR {self.audio_filename[-18:]}", file)
+			#sending the merged file
+			self.ftp.cwd('/both')
+			self.target_path = '/both/' + self.folder_name
+			self.go_to_dir(self.target_path)
+			with open(self.both_filename, "rb") as file:
+				# use FTP's STOR command to upload the file
+				self.ftp.storbinary(f"STOR {self.both_filename[-18:]}", file)
+			#remove all files from local storage
+			os.remove(self.audio_filename)
+			os.remove(self.video_filename)
+			os.remove(self.both_filename)
+	def go_to_dir(self,dir):
+		#try to go to path, if not it will be created
+		try:
+			self.ftp.cwd(self.target_path)
+		except:
+			self.ftp.mkd(self.target_path)
+			self.ftp.cwd(self.target_path)
 				   
 def regulate_video_delay(v):
-	global video_event,audio_event
+	#video dely of stream can be changed at any time, to synchronize the audio and video exactely
+	global video_event,audio_event,capture_event
 	video_event.wait()
 	audio_event.wait()
 	while True:
 		print('please enter delay value')
 		answer= input()
-		#if answer == "end":
-			#print('successfully synchronized')
-			#regulation_event.set()
-			#sys.exit()
-		new_delay= float(answer)*30
-		
-		v.change_http_queue(int(new_delay))
-		print('successfully changed max_size to', int(new_delay))
+		#the delay is adjusted by the frame number which is stored in a queue
+		new_delay= int(float(answer)*30)
+		v.change_http_queue(new_delay)
+		print('successfully changed max_size to', new_delay)
 		
 wav_header = genHeader(RATE, bitsPerSample, CHANNELS, CHUNK)
 
-
+#web adresses
 @app.route('/audio_unlim')
 def audio_unlim():
 	# start Recording
@@ -330,30 +408,32 @@ def video_unlim():
 	
 	return Response(v.get_frame(),mimetype='multipart/x-mixed-replace; boundary=frame')
 	
-	
+#cpu tempreture is displayed on a frame
 @app.route('/tempreture')
 def tempreture():
 	return Response(cpu_tempreture_sensor(),mimetype='multipart/x-mixed-replace; boundary=frame')
 	
-	
-audio_q= queue.Queue(maxsize=48)
-video_q = queue.Queue(maxsize=30)
 
 
 if __name__ == "__main__":
+	# change the camera settings, they are stored in the path below
+	subprocess.call(["bash","/home/pi/Documents/v4l2_bash.sh"])
 	a = audio()
 	v = video(delay=3)
 	mo = motion()
+	ftp = ftp_server()
 	
+	#start all threads
 	regulator = threading.Thread(target=regulate_video_delay, args=(v,))
 	voltage_sensor= threading.Thread(target=voltage)
-	motion_thread = threading.Thread(target=mo.start_motiondetection)
+	motion_thread = threading.Thread(target=mo.start_motion_detection)
+	ftp_thread = threading.Thread(target=ftp.send_file)
 	
 	motion_thread.start()
 	voltage_sensor.start()
-	
 	regulator.start()
+	ftp_thread.start()
+	
 	app.run(host='192.168.0.137', threaded=True,port=5000)
-
 
 

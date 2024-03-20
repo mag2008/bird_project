@@ -28,6 +28,7 @@ recorded_both = queue.Queue()
 #start Flask
 app = Flask(__name__)
 
+#makes an blackscrean with cputemperature on it
 def cpu_tempreture_sensor():
 	
 	frame_height = 400
@@ -55,7 +56,8 @@ def cpu_tempreture_sensor():
 		_, buffer = cv2.imencode('.jpg', frame_with_text)
 		yield (b'--frame\r\n'
 		   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-		   
+
+#measures voltage of solarpanel to look wether it is day or night		   
 def voltage():
 	global capture_event, change_camera
 	day = True
@@ -391,7 +393,8 @@ class ftp_server:
 		except:
 			self.ftp.mkd(self.target_path)
 			self.ftp.cwd(self.target_path)
-				   
+
+#regulate the video stream delay				   
 def regulate_video_delay(v):
 	#video dely of stream can be changed at any time, to synchronize the audio and video exactely
 	global video_event,audio_event,capture_event

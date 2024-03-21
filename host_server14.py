@@ -76,7 +76,7 @@ def voltage():
 					capture_event.wait()#if capturing video it waits
 					change_camera.clear()#block capturing video
 					v.change_device(1)
-					time.sleep(0.5)
+					time.sleep(2)#delay nessesary
 					change_camera.set()#releasing block, capture video is possible
 					day = False
 					
@@ -88,13 +88,12 @@ def voltage():
 					capture_event.wait()
 					change_camera.clear()
 					v.change_device(0)
-					time.sleep(0.5)
+					time.sleep(2)
 					change_camera.set()
 					day = True
 			
 class motion:
 	def __init__(self):
-		
 		global video_event, audio_event,capture_event,change_camera
 	def start_motion_detection(self):
 		
@@ -109,9 +108,10 @@ class motion:
 			self.detect_motion(0.5)
 			if self.text == "motion":
 				
-				print(self.text,'starting capturing...')
+				print(self.text)
 				# the change of camera should not trigger motion
 				if change_camera.is_set():
+					print('start recording')
 					#starts recording, whole process happens in the initialization
 					record_class = record()
 	def detect_motion(self,delay):
@@ -363,7 +363,7 @@ class ftp_server:
 			self.go_to_dir(self.target_path)
 			with open(self.video_filename, "rb") as file:
 				# use FTP's STOR command to upload the file
-				self.ftp.storbinary(f"STOR {self.video_filename[-18:]}", file)
+				self.ftp.storbinary(f"STOR {self.video_filename[-19:]}", file)
 				
 			#sending the audio	
 			self.ftp.cwd('/audio')
@@ -371,7 +371,7 @@ class ftp_server:
 			self.go_to_dir(self.target_path)
 			with open(self.audio_filename, "rb") as file:
 				# use FTP's STOR command to upload the file
-				self.ftp.storbinary(f"STOR {self.audio_filename[-18:]}", file)
+				self.ftp.storbinary(f"STOR {self.audio_filename[-19:]}", file)
 				
 			#sending the merged file
 			self.ftp.cwd('/both')
@@ -379,7 +379,7 @@ class ftp_server:
 			self.go_to_dir(self.target_path)
 			with open(self.both_filename, "rb") as file:
 				# use FTP's STOR command to upload the file
-				self.ftp.storbinary(f"STOR {self.both_filename[-18:]}", file)
+				self.ftp.storbinary(f"STOR {self.both_filename[-19:]}", file)
 				
 			#remove all files from local storage
 			os.remove(self.audio_filename)

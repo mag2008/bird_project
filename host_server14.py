@@ -72,7 +72,7 @@ def voltage():
 			if ser.in_waiting > 0:
 				line = ser.readline().decode('utf-8').rstrip()
 				#print(line)
-				if int(line) < 200:
+				if int(line) < 800:
 					capture_event.wait()#if capturing video it waits
 					change_camera.clear()#block capturing video
 					v.change_device(1)
@@ -84,7 +84,7 @@ def voltage():
 			if ser.in_waiting > 0:
 				line = ser.readline().decode('utf-8').rstrip()
 				#print(line)
-				if int(line) > 200:
+				if int(line) > 800:
 					capture_event.wait()
 					change_camera.clear()
 					v.change_device(0)
@@ -389,10 +389,10 @@ class ftp_server:
 	def go_to_dir(self,dir):
 		#try to go to path, if not it will be created
 		try:
-			self.ftp.cwd(self.target_path)
+			self.ftp.cwd(dir)
 		except:
-			self.ftp.mkd(self.target_path)
-			self.ftp.cwd(self.target_path)
+			self.ftp.mkd(dir)
+			self.ftp.cwd(dir)
 
 #regulate the video stream delay				   
 def regulate_video_delay(v):

@@ -79,7 +79,7 @@ def voltage():
 					time.sleep(2)#delay nessesary
 					change_camera.set()#releasing block, capture video is possible
 					day = False
-					
+		print("changed camera")			
 		while not day:
 			if ser.in_waiting > 0:
 				line = ser.readline().decode('utf-8').rstrip()
@@ -91,7 +91,7 @@ def voltage():
 					time.sleep(2)
 					change_camera.set()
 					day = True
-			
+		print("changed camera")	
 class motion:
 	def __init__(self):
 		global video_event, audio_event,capture_event,change_camera

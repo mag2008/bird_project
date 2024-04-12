@@ -30,31 +30,17 @@ recorded_both = queue.Queue()
 #makes an blackscrean with cputemperature on it
 def cpu_tempreture_sensor():
 	
-	frame_height = 400
-	frame_width = 600
-	frame_thickness = 10
-	text_position = (50, 50)  
-	font = cv2.FONT_HERSHEY_SIMPLEX
-	font_scale = 1
-	color = (255, 255, 255) 
-	thickness = 2
+	
 	cpu = CPUTemperature()
 	
 	while True:
 		time.sleep(1)
-		#create an black background
-		frame = np.zeros((frame_height, frame_width, 3), dtype=np.uint8)
-		frame_with_frame = cv2.rectangle(frame, (0, 0), (frame_width - 1, frame_height - 1), (0, 0, 0), frame_thickness)
 		
 		#get cpu tempreture, you can see if the cpu is burning
 		tempreture_value = cpu.temperature
-		float_text = "Current CPU Tempreture is: {:.2f}".format(tempreture_value)
-		frame_with_text = cv2.putText(frame_with_frame, float_text, text_position, font, font_scale, color, thickness)
-
-		# Convert the image to JPEG format
-		_, buffer = cv2.imencode('.jpg', frame_with_text)
-		yield (b'--frame\r\n'
-		   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+		if int(tempreture_value)>75:
+			print('high tempreture warning')
+		
 
 #measures voltage of solarpanel to look wether it is day or night		   
 def voltage():
@@ -375,7 +361,7 @@ mo = motion()
 ftp = ftp_server()
 
 #start all threads
-regulator = threading.Thread(target=regulate_video_delay, args=(v,))
+tempreture_sensor = threading.Thread(target=cpu_tempreture_sensor)
 voltage_sensor= threading.Thread(target=voltage)
 motion_thread = threading.Thread(target=mo.start_motion_detection)
 ftp_thread = threading.Thread(target=ftp.send_file)
@@ -386,6 +372,5 @@ audio_thread.start()
 video_thread.start()
 motion_thread.start()
 voltage_sensor.start()
-regulator.start()
 ftp_thread.start()
-
+tempreture_sensor.start()
